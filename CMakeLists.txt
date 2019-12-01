@@ -18,14 +18,12 @@ configure_file (
   "${PROJECT_BINARY_DIR}/service-checker.generated.h"
   )
 
-add_executable(service-checker main.cpp queryAnswerType.h queryDnsType.h objectmodel/queryInfo.h objectmodel/queryResult.h)
+add_executable(service-checker main.cpp)
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if(WIN32)
-    find_package(libssh REQUIRED)
     target_link_libraries(service-checker libssh)
-    target_include_directories(service-checker PRIVATE libssh)
 endif()
 
 if(UNIX)
