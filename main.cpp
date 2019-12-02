@@ -40,12 +40,15 @@ std::string read_result(LIBSSH2_CHANNEL* channel)
         if (rc > 0)
         {
             bytecount += rc;
-            std::cout << "we read: " << buffer << std::endl;
             ss << buffer;
+        }
+        else if (rc == 0)
+        {
+            //Do nothing
         }
         else if (rc != LIBSSH2_ERROR_EAGAIN)
         {
-            std::cerr << "libssh2_channel_read returned " << rc << std::endl;
+            std::cerr << "libssh2_channel_read returned: " << rc << std::endl;
         }
     } while (rc > 0);
 
