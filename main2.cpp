@@ -10,6 +10,13 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif // WIN32
 
+#ifdef _linux_
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <resolv.h>
+#include <sys/socket.h>
+#endif // _linux_
+
 #include <sstream>
 #include <assert.h>
 
@@ -214,6 +221,16 @@ int main(int argc, char** argv)
     if (libssh2_userauth_publickey_fromfile(session, "root", pubkey_path, privkey_path, "")) 
     {
         std::cerr << "\tAuthentication by public key failed" << std::endl;
+        libssh2_session_disconnect(session, "");
+        libssh2_session_free(session);
+
+        return -1;
+    }
+
+    LIBSSH2_CHANNEL* channel = libssh2_channel_open_session(session);
+    if (!channel) 
+    {
+        std::cerr << "Unable to open a session" << std::endl;
         libssh2_session_disconnect(session, "");
         libssh2_session_free(session);
 
