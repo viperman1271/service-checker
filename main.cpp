@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 
     if (rc = libssh2_userauth_publickey_fromfile(session, "root", pubkey_path, privkey_path, ""))
     {
-        std::cerr << "\tAuthentication by public key failed " << rc << std::endl;
+        std::cerr << "\tAuthentication by public key failed " << rc << " [pub: " << pubkey_path << ", priv: " << privkey_path << "]" << std::endl;
         libssh2_session_disconnect(session, "");
         libssh2_session_free(session);
 
