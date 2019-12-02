@@ -1,20 +1,21 @@
-// #include <libssh/libssh.h>
-// #include <errno.h>
-// #include <iostream>
-// #include <regex>
-// 
-// #include <windows.h>
-// 
-// #include <sstream>
-// #include <assert.h>
-// 
-// #define SERVICE_BIND_ERROR -1
-// #define SERVICE_BIND_FATAL_ERROR -100
-// #define SERVICE_BIND_RUNNING 1
-// #define SERVICE_BIND_STOPPED 0
-// 
-// int is_bind_running(ssh_session session)
-// {
+//#include <libssh/libssh.h>
+#include <libssh2.h>
+#include <errno.h>
+#include <iostream>
+#include <regex>
+
+#include <windows.h>
+
+#include <sstream>
+#include <assert.h>
+
+#define SERVICE_BIND_ERROR -1
+#define SERVICE_BIND_FATAL_ERROR -100
+#define SERVICE_BIND_RUNNING 1
+#define SERVICE_BIND_STOPPED 0
+
+int is_bind_running2(/*ssh_session session*/)
+{
 //     ssh_channel channel = ssh_channel_new(session);
 //     if (channel == nullptr)
 //     {
@@ -70,12 +71,12 @@
 //     {
 //         return SERVICE_BIND_STOPPED;
 //     }
-// 
-//     return SERVICE_BIND_ERROR;
-// }
-// 
-// int start_bind(ssh_session session)
-// {
+
+    return SERVICE_BIND_ERROR;
+}
+
+int start_bind2(/*ssh_session session*/)
+{
 //     ssh_channel channel = ssh_channel_new(session);
 //     if (channel == nullptr)
 //     {
@@ -121,12 +122,14 @@
 //     ssh_channel_send_eof(channel);
 //     ssh_channel_close(channel);
 //     ssh_channel_free(channel);
-// 
-//     return 0;
-// }
-// 
-// int main()
-// {
+
+    return 0;
+}
+
+int main()
+{
+    LIBSSH2_SESSION* session = libssh2_session_init();
+
 //     ssh_session session = ssh_new();
 //     if (session == nullptr)
 //     {
@@ -189,18 +192,18 @@
 //         return -1;
 //     }
 // 
-//     switch (is_bind_running(session))
+//     switch (is_bind_running2(session))
 //     {
 //         case SERVICE_BIND_FATAL_ERROR:
 //             return -1;
 // 
 //         case SERVICE_BIND_STOPPED:
-//             start_bind(session);
+//             start_bind2(session);
 //             break;
 //     }
 // 
 //     ssh_disconnect(session);
 //     ssh_free(session);
-// 
-//     return 0;
-// }
+
+    return 0;
+}

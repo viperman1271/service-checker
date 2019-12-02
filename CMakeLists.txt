@@ -18,12 +18,12 @@ configure_file (
   "${PROJECT_BINARY_DIR}/service-checker.generated.h"
   )
 
-add_executable(service-checker main.cpp)
+add_executable(service-checker main.cpp main2.cpp)
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if(WIN32)
-    target_link_libraries(service-checker libssh)
+    target_link_libraries(service-checker libssh2)
 endif()
 
 if(UNIX)
