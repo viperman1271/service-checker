@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <resolv.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #endif // __linux__
 
 #include <sstream>
@@ -24,6 +25,36 @@
 #define SERVICE_BIND_FATAL_ERROR -100
 #define SERVICE_BIND_RUNNING 1
 #define SERVICE_BIND_STOPPED 0
+
+static int waitsocket(int socket_fd, LIBSSH2_SESSION *session)
+{
+    struct timeval timeout;
+    int rc;
+    fd_set fd;
+    fd_set *writefd = nullptr;
+    fd_set *readfd = nullptr;
+    int dir;
+
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+
+    FD_ZERO(&fd);
+
+    FD_SET(socket_fd, &fd);
+
+    /* now make sure we wait in the correct direction */
+    dir = libssh2_session_block_directions(session);
+
+    if (dir & LIBSSH2_SESSION_BLOCK_INBOUND)
+        readfd = &fd;
+
+    if (dir & LIBSSH2_SESSION_BLOCK_OUTBOUND)
+        writefd = &fd;
+
+    rc = select(socket_fd + 1, readfd, writefd, nullptr, &timeout);
+
+    return rc;
+}
 
 int is_bind_running2(/*ssh_session session*/)
 {
@@ -236,6 +267,74 @@ int main(int argc, char** argv)
 
         return -1;
     }
+
+    while ((rc = libssh2_channel_exec(channel, "service named status")) == LIBSSH2_ERROR_EAGAIN) 
+    {
+        waitsocket(sock, session);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    int bytecount = 0;
+
+    for (;;) {
+        /* loop until we block */
+        int rc;
+        do {
+            char buffer[0x4000];
+            rc = libssh2_channel_read(channel, buffer, sizeof(buffer));
+            if (rc > 0) 
+            {
+                int i;
+                bytecount += rc;
+
+                std::cout << "we read: " << buffer << std::endl;
+
+//                 fprintf(stderr, "We read:\n");
+//                 for (i = 0; i < rc; ++i)
+//                 {
+//                     fputc(buffer[i], stderr);
+//                 }
+//                 fprintf(stderr, "\n");
+            }
+            else 
+            {
+                if (rc != LIBSSH2_ERROR_EAGAIN)
+                {
+                    std::cerr << "libssh2_channel_read returned " << rc << std::endl;
+                }
+            }
+        } while (rc > 0);
+
+        /* this is due to blocking that would occur otherwise so we loop on
+           this condition */
+        if (rc == LIBSSH2_ERROR_EAGAIN) {
+            waitsocket(sock, session);
+        }
+        else
+            break;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    while ((rc = libssh2_channel_close(channel)) == LIBSSH2_ERROR_EAGAIN)
+    {
+        waitsocket(sock, session);
+    }
+
+    char* exitsignal = (char*)"none";
+
+    if (rc == 0) 
+    {
+        auto exitcode = libssh2_channel_get_exit_status(channel);
+        libssh2_channel_get_exit_signal(channel, &exitsignal, nullptr, nullptr, nullptr, nullptr, nullptr);
+    }
+
+    libssh2_channel_free(channel);
+    channel = nullptr;
+
+    libssh2_session_disconnect(session, "normal shutdown");
+    libssh2_session_free(session);
 
 #ifdef WIN32
     closesocket(sock);
