@@ -26,6 +26,19 @@
 #define SERVICE_BIND_RUNNING 1
 #define SERVICE_BIND_STOPPED 2
 
+std::vector<std::string> split_string(const std::string& str)
+{
+    std::stringstream ss(str);
+
+    std::vector<std::string> vector;
+    std::string val;
+    while (std::getline(ss, val, '\n'))
+    {
+        vector.push_back(val);
+    }
+    return vector;
+}
+
 std::string read_result(LIBSSH2_CHANNEL* channel)
 {
     int bytecount = 0;
@@ -36,6 +49,7 @@ std::string read_result(LIBSSH2_CHANNEL* channel)
     do
     {
         char buffer[0x4000];
+        memset(buffer, 0, sizeof(buffer));
         rc = libssh2_channel_read(channel, buffer, sizeof(buffer));
         if (rc > 0)
         {
@@ -44,7 +58,7 @@ std::string read_result(LIBSSH2_CHANNEL* channel)
         }
         else if (rc == 0)
         {
-            //Do nothing
+            /*Do nothing*/
         }
         else if (rc != LIBSSH2_ERROR_EAGAIN)
         {
@@ -92,6 +106,7 @@ int is_bind_running(LIBSSH2_SESSION* session)
     }
 
     std::string rs = read_result(channel);
+    std::vector<std::string> lines = split_string(rs);
 
     if (rc = libssh2_channel_close(channel))
     {
@@ -109,6 +124,22 @@ int is_bind_running(LIBSSH2_SESSION* session)
 
     libssh2_channel_free(channel);
     channel = nullptr;
+
+    for (const std::string& line : lines)
+    {
+        const bool isRunningFound = line.find("is running");
+        const bool isStoppedFound = line.find("stopped");
+        const bool namedFound = line.find("named");
+
+        if (namedFound && isRunningFound)
+        {
+            return SERVICE_BIND_RUNNING;
+        }
+        else if (namedFound && isStoppedFound)
+        {
+            return SERVICE_BIND_STOPPED;
+        }
+    }
 
     std::regex running_regex("(named).*?(is running)", std::regex_constants::ECMAScript | std::regex_constants::icase);
     if (std::regex_search(rs, running_regex)) 
@@ -202,7 +233,7 @@ int main(int argc, char** argv)
 
     unsigned long hostaddr;
 
-    //TODO: Need to resolve host from name
+    /*TODO: Need to resolve host from name*/
 
     hostaddr = inet_addr(hostname.c_str());
 
@@ -233,7 +264,7 @@ int main(int argc, char** argv)
 
     const char* fingerprint = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
 
-    //TODO gather fingerprint
+    /*TODO gather fingerprint*/
 
 #ifdef _WIN32
     if (privkey.empty())
