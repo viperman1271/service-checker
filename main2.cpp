@@ -4,7 +4,9 @@
 #include <iostream>
 #include <regex>
 
+#ifdef WIN32
 #include <windows.h>
+#endif // WIN32
 
 #include <sstream>
 #include <assert.h>

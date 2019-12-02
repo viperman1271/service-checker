@@ -28,6 +28,9 @@ endif()
 
 if(UNIX)
     include(~/vcpkg/scripts/buildsystems/vcpkg.cmake)
+    
+    set_property(TARGET service-checker PROPERTY CXX_STANDARD 11)
+    
     find_package(libssh CONFIG REQUIRED)
     target_link_libraries(service-checker PRIVATE ${LIBSSH_LIBRARIES})
     target_include_directories(service-checker PRIVATE ${LIBSSH_INCLUDE_DIRS})
