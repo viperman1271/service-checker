@@ -10,12 +10,12 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif // WIN32
 
-#ifdef _linux_
+#if defined(__linux__)
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <resolv.h>
 #include <sys/socket.h>
-#endif // _linux_
+#endif // __linux__
 
 #include <sstream>
 #include <assert.h>
