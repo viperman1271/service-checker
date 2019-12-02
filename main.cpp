@@ -81,7 +81,7 @@ int is_bind_running(LIBSSH2_SESSION* session)
     int rc = 0;
     if (rc = libssh2_channel_exec(channel, "service named status"))
     {
-        std::cerr << "Unable to execute on a channel" << std::endl;
+        std::cerr << "Unable to execute on a channel " << rc << std::endl;
 
         libssh2_channel_close(channel);
 
@@ -95,6 +95,8 @@ int is_bind_running(LIBSSH2_SESSION* session)
 
     if (rc = libssh2_channel_close(channel))
     {
+        std::cerr << "Unable to close channel " << rc << std::endl;
+
         return SERVICE_BIND_ERROR;
     }
 
@@ -134,7 +136,7 @@ int start_bind(LIBSSH2_SESSION* session)
     int rc = 0;
     if (rc = libssh2_channel_exec(channel, "service named start"))
     {
-        std::cerr << "Unable to execute on a channel" << std::endl;
+        std::cerr << "Unable to execute on a channel " << rc << std::endl;
 
         libssh2_channel_close(channel);
 
@@ -149,6 +151,7 @@ int start_bind(LIBSSH2_SESSION* session)
 
     if (rc = libssh2_channel_close(channel))
     {
+        std::cerr << "Unable to close channel " << rc << std::endl;
         return SERVICE_BIND_ERROR;
     }
 
@@ -218,6 +221,7 @@ int main(int argc, char** argv)
     LIBSSH2_SESSION* session = libssh2_session_init();
     if (session == nullptr)
     {
+        std::cerr << "failed to initialize session!" << std::endl;
         return -1;
     }
 
