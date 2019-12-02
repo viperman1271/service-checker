@@ -32,6 +32,8 @@ if(UNIX)
     set_property(TARGET service-checker PROPERTY CXX_STANDARD 11)
     
     find_package(libssh CONFIG REQUIRED)
-    target_link_libraries(service-checker PRIVATE ${LIBSSH_LIBRARIES})
+    find_package(CLI11 CONFIG REQUIRED)
+    
+    target_link_libraries(service-checker PRIVATE ${LIBSSH_LIBRARIES} CLI11::CLI11)
     target_include_directories(service-checker PRIVATE ${LIBSSH_INCLUDE_DIRS})
 endif()
