@@ -167,7 +167,11 @@ int main(int argc, char** argv)
     CLI::App app("Command line application for querying dns records from a specific server");
 
     std::string hostname;
+    std::string pubkey;
+    std::string privkey;
     app.add_option("-s,--server", hostname, "SSH server address");
+    app.add_option("--pub", pubkey, "SSH server address");
+    app.add_option("--priv", privkey, "SSH server address");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -224,29 +228,36 @@ int main(int argc, char** argv)
 
     //TODO gather fingerprint
 
-    const char* privkey_path = nullptr;
-    const char* pubkey_path = nullptr;
-
 #ifdef _WIN32
-    LPCSTR privKey = "%userprofile%\\.ssh\\id_rsa";
-    LPCSTR pubKey = "%userprofile%\\.ssh\\id_rsa.pub";
+    if (privkey.empty())
+    {
+        LPCSTR privKeyTemp = "%userprofile%\\.ssh\\id_rsa";
+        LPSTR privKeyStr = reinterpret_cast<LPSTR>(alloca(256));
+        ExpandEnvironmentStrings(privKeyTemp, privKeyStr, 256);
+        privkey = privKeyStr;
+    }
 
-    LPSTR privKeyStr = reinterpret_cast<LPSTR>(alloca(256));
-    LPSTR pubKeyStr = reinterpret_cast<LPSTR>(alloca(256));
-
-    ExpandEnvironmentStrings(privKey, privKeyStr, 256);
-    ExpandEnvironmentStrings(pubKey, pubKeyStr, 256);
-
-    privkey_path = privKeyStr;
-    pubkey_path = pubKeyStr;
+    if (pubkey.empty())
+    {
+        LPCSTR pubKeyTemp = "%userprofile%\\.ssh\\id_rsa.pub";
+        LPSTR pubKeyStr = reinterpret_cast<LPSTR>(alloca(256));
+        ExpandEnvironmentStrings(pubKeyTemp, pubKeyStr, 256);
+        pubkey = pubKeyStr;
+    }
 #else
-    privkey_path = "~/.ssh/id_rsa";
-    pubkey_path = "~/.ssh/id_rsa.pub";
+    if (privkey.empty())
+    {
+        privkey = "~/.ssh/id_rsa";
+    }
+    if (pubkey.empty())
+    {
+        pubkey = "~/.ssh/id_rsa.pub";
+    }
 #endif // _WIN32
 
-    if (rc = libssh2_userauth_publickey_fromfile(session, "root", pubkey_path, privkey_path, ""))
+    if (rc = libssh2_userauth_publickey_fromfile(session, "root", pubkey.c_str(), privkey.c_str(), ""))
     {
-        std::cerr << "\tAuthentication by public key failed " << rc << " [pub: " << pubkey_path << ", priv: " << privkey_path << "]" << std::endl;
+        std::cerr << "\tAuthentication by public key failed " << rc << " [pub: " << pubkey << ", priv: " << privkey << "]" << std::endl;
         libssh2_session_disconnect(session, "");
         libssh2_session_free(session);
 
