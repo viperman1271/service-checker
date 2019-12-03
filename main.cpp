@@ -127,8 +127,6 @@ int is_bind_running(LIBSSH2_SESSION* session)
 
     for (const std::string& line : lines)
     {
-        const bool isRunningFound = line.find("is running");
-        const bool isStoppedFound = line.find("stopped");
         const bool isRunningFound = (line.find("running") != std::string::npos);
         const bool isStoppedFound = (line.find("stopped") != std::string::npos);
         const bool namedFound = (line.find("named") != std::string::npos);
