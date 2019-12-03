@@ -129,7 +129,9 @@ int is_bind_running(LIBSSH2_SESSION* session)
     {
         const bool isRunningFound = line.find("is running");
         const bool isStoppedFound = line.find("stopped");
-        const bool namedFound = line.find("named");
+        const bool isRunningFound = (line.find("running") != std::string::npos);
+        const bool isStoppedFound = (line.find("stopped") != std::string::npos);
+        const bool namedFound = (line.find("named") != std::string::npos);
 
         if (namedFound && isRunningFound)
         {
@@ -188,7 +190,7 @@ int start_bind(LIBSSH2_SESSION* session)
 
     if (rc == 0)
     {
-        char* exitsignal = "none";
+        char* exitsignal = static_cast<char*>("none");
         auto exitcode = libssh2_channel_get_exit_status(channel);
         libssh2_channel_get_exit_signal(channel, &exitsignal, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
