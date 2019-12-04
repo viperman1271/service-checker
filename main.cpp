@@ -5,18 +5,17 @@
 #include <iostream>
 #include <regex>
 
-#ifdef WIN32
+#ifdef PLATFORM_WINDOWS
 #include <windows.h>
-#pragma comment(lib, "ws2_32.lib")
-#endif // WIN32
+#endif // PLATFORM_WINDOWS
 
-#if defined(__linux__)
+#ifdef PLATFORM_UNIX
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <resolv.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#endif // __linux__
+#endif // PLATFORM_UNIX
 
 #include <sstream>
 #include <assert.h>
@@ -50,7 +49,7 @@ std::string read_result(LIBSSH2_CHANNEL* channel)
     {
         char buffer[0x4000];
         memset(buffer, 0, sizeof(buffer));
-        rc = libssh2_channel_read(channel, buffer, sizeof(buffer));
+        rc = static_cast<int>(libssh2_channel_read(channel, buffer, sizeof(buffer)));
         if (rc > 0)
         {
             bytecount += rc;
@@ -196,7 +195,12 @@ int start_bind(LIBSSH2_SESSION* session)
     libssh2_channel_free(channel);
     channel = nullptr;
 
-    return SERVICE_BIND_RUNNING;
+    if (rc == 0)
+    {
+        return is_bind_running(session);
+    }
+
+    return SERVICE_BIND_ERROR;
 }
 
 int main(int argc, char** argv)
@@ -206,9 +210,11 @@ int main(int argc, char** argv)
     std::string hostname;
     std::string pubkey;
     std::string privkey;
+    bool verbose = false;
     app.add_option("-s,--server", hostname, "SSH server address");
-    app.add_option("--pub", pubkey, "SSH server address");
-    app.add_option("--priv", privkey, "SSH server address");
+    app.add_option("--pub", pubkey, "Specify a path to override the default public key path");
+    app.add_option("--priv", privkey, "Override the default private key path with the provided path");
+    app.add_flag("-v,--verbose", verbose, "Whether the output shall be verbose or not");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -231,13 +237,11 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    unsigned long hostaddr;
-
     /*TODO: Need to resolve host from name*/
 
-    hostaddr = inet_addr(hostname.c_str());
+    const unsigned long hostaddr = inet_addr(hostname.c_str());
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    auto sock = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
@@ -263,6 +267,11 @@ int main(int argc, char** argv)
     }
 
     const char* fingerprint = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
+
+    if (verbose)
+    {
+        std::cout << "Remote server fingerprint: " << fingerprint << std::endl;
+    }
 
     /*TODO gather fingerprint*/
 
@@ -293,6 +302,12 @@ int main(int argc, char** argv)
     }
 #endif // _WIN32
 
+    if (verbose)
+    {
+        std::cout << "Public key path: " << pubkey << std::endl;
+        std::cout << "Private key path: " << privkey << std::endl;
+    }
+
     if (rc = libssh2_userauth_publickey_fromfile(session, "root", pubkey.c_str(), privkey.c_str(), ""))
     {
         std::cerr << "\tAuthentication by public key failed " << rc << " [pub: " << pubkey << ", priv: " << privkey << "]" << std::endl;
@@ -303,17 +318,32 @@ int main(int argc, char** argv)
     }
 
     rc = is_bind_running(session);
-
     if (rc == SERVICE_BIND_STOPPED)
     {
+        if (verbose) { std::cout << "bind was not running" << std::endl; }
+
         rc = start_bind(session);
-        if (rc != SERVICE_BIND_ERROR)
-        {
-            rc = is_bind_running(session);
+
+        if (verbose) 
+        { 
+            switch (rc)
+            {
+            case SERVICE_BIND_RUNNING:
+                std::cout << "bind service was started" << std::endl;
+                break;
+
+            default:
+                std::cout << "bind service could not be started" << std::endl;
+                break;
+            }
         }
     }
 
-    int result = (rc == SERVICE_BIND_RUNNING) ? 0 : -1;
+    const int result = (rc == SERVICE_BIND_RUNNING) ? 0 : -1;
+    if (verbose)
+    {
+        std::cout << "result: " << result << std::endl;
+    }
 
     libssh2_session_disconnect(session, "normal shutdown");
     libssh2_session_free(session);

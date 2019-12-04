@@ -23,11 +23,14 @@ add_executable(service-checker main.cpp)
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if(WIN32)
-    target_link_libraries(service-checker libssh2)
+    add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS -DPLATFORM_WINDOWS)
+    target_link_libraries(service-checker libssh2 ws2_32.lib)
 endif()
 
 if(UNIX)
     include(~/vcpkg/scripts/buildsystems/vcpkg.cmake)
+    
+    add_definitions(-DPLATFORM_UNIX)
 
     set_property(TARGET service-checker PROPERTY CXX_STANDARD 11)
 
