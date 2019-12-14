@@ -128,13 +128,14 @@ int is_bind_running(LIBSSH2_SESSION* session)
     {
         const bool isRunningFound = (line.find("running") != std::string::npos);
         const bool isStoppedFound = (line.find("stopped") != std::string::npos);
+        const bool isDead = (line.find(" dead ") != std::string::npos);
         const bool namedFound = (line.find("named") != std::string::npos);
 
         if (namedFound && isRunningFound)
         {
             return SERVICE_BIND_RUNNING;
         }
-        else if (namedFound && isStoppedFound)
+        else if (namedFound && (isStoppedFound || isDead))
         {
             return SERVICE_BIND_STOPPED;
         }
